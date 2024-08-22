@@ -1,0 +1,53 @@
+
+
+// Define the GasketTask class
+class GasketTask extends RecursiveTask<Void> {
+    private final int level;
+    private final List<Rectangle> rectangles;
+    private final int x, y, size;
+
+    // Constructor to initialize the task
+    public GasketTask(int level, List<Rectangle> rectangles, int x, int y, int size) {
+        this.level = level;
+        this.rectangles = rectangles;
+        this.x = x;
+        this.y = y;
+        this.size = size;
+    }
+
+    // The compute method contains the logic for the Sierpinski Carpet
+    @Override
+    protected Void compute() {
+        // Base case: if level is 0, stop the recursion
+        if (level > 0) {
+
+            int sub = size / 3; // calculate the size of each smaller sub-square by dividing the current square size by 3
+
+            // create a white rectangle at the center of the current square
+            Rectangle box = new Rectangle(x + sub, y + sub, sub - 1, sub - 1); // position at one-third of the current square width and height, the size is smaller than the sub-square
+            box.setFill(Color.WHITE);
+            synchronized (rectangles) {
+                rectangles.add(box); // add the white rectangle to the list
+            }
+
+            int newLevel = level - 1; // decrement the level of recursion
+
+            // Recursively compute the white rectangles for the 8 sub-squares
+            GasketTask topLeft = new GasketTask(newLevel, rectangles, x, y, sub); // top-left square
+            GasketTask topCenter = new GasketTask(newLevel, rectangles, x + sub, y, sub); // top-center square
+            GasketTask topRight = new GasketTask(newLevel, rectangles, x + 2 * sub, y, sub); // top-right square
+            GasketTask middleLeft = new GasketTask(newLevel, rectangles, x, y + sub, sub); // middle-left square
+
+            // Skip the middle-middle sub-square (since it is already filled with a white rectangle).
+
+            GasketTask middleRight = new GasketTask(newLevel, rectangles, x + 2 * sub, y + sub, sub); // middle-right square
+            GasketTask bottomLeft = new GasketTask(newLevel, rectangles, x, y + 2 * sub, sub); // bottom-left square
+            GasketTask bottomCenter = new GasketTask(newLevel, rectangles, x + sub, y + 2 * sub, sub); // bottom-center square
+            GasketTask bottomRight = new GasketTask(newLevel, rectangles, x + 2 * sub, y + 2 * sub, sub); // bottom-right square
+
+            // Invoke all tasks in parallel
+            invokeAll(topLeft, topCenter, topRight, middleLeft, middleRight, bottomLeft, bottomCenter, bottomRight);
+        }
+        return null;
+    }
+}
