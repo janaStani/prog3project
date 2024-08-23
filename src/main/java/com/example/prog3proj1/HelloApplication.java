@@ -14,6 +14,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Translate;
 import javafx.stage.Stage;
+import mpi.MPI;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +40,15 @@ public class HelloApplication extends Application {
     // To track the scene's width and height
     private double sceneWidth;
     private double sceneHeight;
+
+    // Store command-line arguments
+    private String[] commandLineArgs;
+
+    @Override
+    public void init() {
+        // Capture command-line arguments passed from main
+        commandLineArgs = getParameters().getRaw().toArray(new String[0]);
+    }
 
     @Override
     public void start(Stage primaryStage) {
@@ -81,14 +91,26 @@ public class HelloApplication extends Application {
 
         GasketTask task = new GasketTask(level, rectangles, DEFAULT_X, DEFAULT_Y, DEFAULT_SIZE);  // Create the root task
 
+        long startTime = System.nanoTime(); // timer to measure the time in each mode
 
         // Compute white rectangles
-        // Use parallel or sequential computation based on user choice
-        if (shouldUseParallel()) {
+        // Determine computation mode
+        if (commandLineArgs.length > 0 && commandLineArgs[0].equalsIgnoreCase("distributed")) {
+            // distributed mode using MPJ Express
+            MPI.Init(commandLineArgs);
+            computeGasketDistributed(level, rectangles, DEFAULT_X, DEFAULT_Y, DEFAULT_SIZE);
+            MPI.Finalize();
+        } else if (shouldUseParallel()) {
+            // parallel mode using ForkJoinPool
             computeGasketParallel(level, rectangles, DEFAULT_X, DEFAULT_Y, DEFAULT_SIZE); // parallel version
         } else {
             task.compute(); // compute position and sizes of white rectangles
         }
+
+        long endTime = System.nanoTime(); // end timer
+        long duration = (endTime - startTime); // in nanoseconds
+        System.out.println("Computation Time: " + duration / 1_000_000 + " ms"); // convert to milliseconds
+
         // takes the level of recursion, the list of rectangles to store the results and the initial position and size of the largest rectangle the base
 
         // Draw white rectangles
@@ -133,6 +155,35 @@ public class HelloApplication extends Application {
         // Stage Contains a Scene: The Stage serves as the main window that holds a single Scene. Each Stage can have only one Scene at a time, but a Scene can be switched out if needed (e.g., to show different content).
 
 
+    }
+
+    private void computeGasketDistributed(int level, List<Rectangle> rectangles, int x, int y, int size) {
+        int rank = MPI.COMM_WORLD.Rank();
+
+        if (level > 0) {
+            int sub = size / 3; // calculate the size of each smaller sub-square by dividing the current square size by 3
+
+            // create a white rectangle at the center of the current square
+            if (rank == 0) {
+                Rectangle box = new Rectangle(x + sub, y + sub, sub - 1, sub - 1); // position at one-third of the current square width and height, the size is smaller than the sub-square
+                box.setFill(Color.WHITE);
+                synchronized (rectangles) {
+                    rectangles.add(box); // add the white rectangle to the list
+                }
+            }
+
+            int newLevel = level - 1; // decrement the level of recursion
+
+            // Calculate sub-square tasks
+            if (rank < 8) {
+                int newX = x + (rank % 3) * sub;
+                int newY = y + (rank / 3) * sub;
+
+                if (!(rank == 4)) { // Skip the middle square
+                    computeGasketDistributed(newLevel, rectangles, newX, newY, sub);
+                }
+            }
+        }
     }
 
     // Determine whether to use parallel computation
@@ -188,6 +239,8 @@ public class HelloApplication extends Application {
         // The compute method contains the logic for the Sierpinski Carpet
         @Override
         protected Void compute() {
+            System.out.println("Processing level: " + level + " in thread: " + Thread.currentThread().getName());
+
             // Base case: if level is 0, stop the recursion
             if (level > 0) {
 
