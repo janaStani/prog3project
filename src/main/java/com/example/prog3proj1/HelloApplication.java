@@ -79,12 +79,15 @@ public class HelloApplication extends Application {
         // List to store rectangles
         List<Rectangle> rectangles = new ArrayList<>();  // holds all the white rectangles that will be added
 
+        GasketTask task = new GasketTask(level, rectangles, DEFAULT_X, DEFAULT_Y, DEFAULT_SIZE);  // Create the root task
+
+
         // Compute white rectangles
         // Use parallel or sequential computation based on user choice
         if (shouldUseParallel()) {
             computeGasketParallel(level, rectangles, DEFAULT_X, DEFAULT_Y, DEFAULT_SIZE); // parallel version
         } else {
-            compute(level, rectangles, DEFAULT_X, DEFAULT_Y, DEFAULT_SIZE); // compute position and sizes of white rectangles
+            task.compute(); // compute position and sizes of white rectangles
         }
         // takes the level of recursion, the list of rectangles to store the results and the initial position and size of the largest rectangle the base
 
