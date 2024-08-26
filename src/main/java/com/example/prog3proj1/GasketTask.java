@@ -64,7 +64,7 @@ import java.util.List;
 import java.util.concurrent.RecursiveTask;
 
 class GasketTask extends RecursiveTask<Void> {
-    private static final int THRESHOLD = 3;
+    //private static final int THRESHOLD = 3;
     private final int level;
     private final List<Rectangle> rectangles;
     private final int x, y, size;
@@ -81,9 +81,8 @@ class GasketTask extends RecursiveTask<Void> {
     protected Void compute() {
         System.out.println("Task level: " + level + " at position (" + x + ", " + y + ") with size " + size);
 
-        if (level <= THRESHOLD) {
-            computeSequentially();
-        } else {
+        if (level > 0) {
+
             int sub = size / 3;
             Rectangle box = new Rectangle(x + sub, y + sub, sub - 1, sub - 1);
             box.setFill(Color.WHITE);
@@ -107,25 +106,4 @@ class GasketTask extends RecursiveTask<Void> {
         return null;
     }
 
-    private void computeSequentially() {
-        if (level > 0) {
-            int sub = size / 3;
-            Rectangle box = new Rectangle(x + sub, y + sub, sub - 1, sub - 1);
-            box.setFill(Color.WHITE);
-            synchronized (rectangles) {
-                rectangles.add(box);
-            }
-
-            int newLevel = level - 1;
-
-            new GasketTask(newLevel, rectangles, x, y, sub).compute();
-            new GasketTask(newLevel, rectangles, x + sub, y, sub).compute();
-            new GasketTask(newLevel, rectangles, x + 2 * sub, y, sub).compute();
-            new GasketTask(newLevel, rectangles, x, y + sub, sub).compute();
-            new GasketTask(newLevel, rectangles, x + 2 * sub, y + sub, sub).compute();
-            new GasketTask(newLevel, rectangles, x, y + 2 * sub, sub).compute();
-            new GasketTask(newLevel, rectangles, x + sub, y + 2 * sub, sub).compute();
-            new GasketTask(newLevel, rectangles, x + 2 * sub, y + 2 * sub, sub).compute();
-        }
-    }
 }
