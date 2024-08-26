@@ -63,23 +63,30 @@ import javafx.scene.shape.Rectangle;
 import java.util.List;
 import java.util.concurrent.RecursiveTask;
 
-class GasketTask extends RecursiveTask<Void> {
-    //private static final int THRESHOLD = 3;
+class ParallelGasketTask extends RecursiveTask<Void> {
+
     private final int level;
     private final List<Rectangle> rectangles;
     private final int x, y, size;
 
-    public GasketTask(int level, List<Rectangle> rectangles, int x, int y, int size) {
+
+
+
+
+
+    public ParallelGasketTask(int level, List<Rectangle> rectangles, int x, int y, int size) {
         this.level = level;
         this.rectangles = rectangles;
         this.x = x;
         this.y = y;
         this.size = size;
+
+
     }
 
     @Override
     protected Void compute() {
-        System.out.println("Task level: " + level + " at position (" + x + ", " + y + ") with size " + size);
+        System.out.println("Thread: " + Thread.currentThread().getName() + " Level: " + level); // Log current thread name and level
 
         if (level > 0) {
 
@@ -92,15 +99,17 @@ class GasketTask extends RecursiveTask<Void> {
 
             int newLevel = level - 1;
 
+            System.out.println("Splitting tasks at level: " + newLevel);
+
             invokeAll(
-                    new GasketTask(newLevel, rectangles, x, y, sub),
-                    new GasketTask(newLevel, rectangles, x + sub, y, sub),
-                    new GasketTask(newLevel, rectangles, x + 2 * sub, y, sub),
-                    new GasketTask(newLevel, rectangles, x, y + sub, sub),
-                    new GasketTask(newLevel, rectangles, x + 2 * sub, y + sub, sub),
-                    new GasketTask(newLevel, rectangles, x, y + 2 * sub, sub),
-                    new GasketTask(newLevel, rectangles, x + sub, y + 2 * sub, sub),
-                    new GasketTask(newLevel, rectangles, x + 2 * sub, y + 2 * sub, sub)
+                    new ParallelGasketTask(newLevel, rectangles, x, y, sub),
+                    new ParallelGasketTask(newLevel, rectangles, x + sub, y, sub),
+                    new ParallelGasketTask(newLevel, rectangles, x + 2 * sub, y, sub),
+                    new ParallelGasketTask(newLevel, rectangles, x, y + sub, sub),
+                    new ParallelGasketTask(newLevel, rectangles, x + 2 * sub, y + sub, sub),
+                    new ParallelGasketTask(newLevel, rectangles, x, y + 2 * sub, sub),
+                    new ParallelGasketTask(newLevel, rectangles, x + sub, y + 2 * sub, sub),
+                    new ParallelGasketTask(newLevel, rectangles, x + 2 * sub, y + 2 * sub, sub)
             );
         }
         return null;

@@ -86,14 +86,6 @@ public class HelloApplication extends Application {
         // takes the level of recursion, the list of rectangles to store the results and the initial position and size of the largest rectangle the base
         //GasketTask task = new GasketTask(level, rectangles, DEFAULT_X, DEFAULT_Y, DEFAULT_SIZE);
 
-        /*
-        // check in what mode to run the application
-        if (shouldUseParallel()) {
-            computeGasketParallel(level, rectangles); // parallel computation using ForkJoinPool
-        } else {
-            task.compute(); // sequential computation
-        }
-        */
 
         if (shouldUseParallel()) {
             computeGasketParallel(level, rectangles);
@@ -183,18 +175,12 @@ public class HelloApplication extends Application {
         return level; // return the valid input
     }
 
-    /*private void computeGasketParallel(int level, List<Rectangle> rectangles) {
-        try (ForkJoinPool pool = new ForkJoinPool()) {  // create a ForkJoinPool
-            GasketTask task = new GasketTask(level, rectangles, DEFAULT_X, DEFAULT_Y, DEFAULT_SIZE);  // create root task
-            pool.invoke(task);  // start the parallel computation
-        }
-    }*/
 
     private void computeGasketParallel(int level, List<Rectangle> rectangles) {
         int parallelism = Runtime.getRuntime().availableProcessors();
         long startTime = System.currentTimeMillis();
         try (ForkJoinPool pool = new ForkJoinPool(parallelism)) {
-            GasketTask task = new GasketTask(level, rectangles, DEFAULT_X, DEFAULT_Y, DEFAULT_SIZE);
+            ParallelGasketTask task = new ParallelGasketTask(level, rectangles, DEFAULT_X, DEFAULT_Y, DEFAULT_SIZE);
             pool.invoke(task);
         }
         long endTime = System.currentTimeMillis();
@@ -203,7 +189,7 @@ public class HelloApplication extends Application {
 
     private void computeGasketSequentially(int level, List<Rectangle> rectangles) {
         long startTime = System.currentTimeMillis();
-        GasketTask task = new GasketTask(level, rectangles, DEFAULT_X, DEFAULT_Y, DEFAULT_SIZE);
+        SequentialGasketTask task = new SequentialGasketTask(level, rectangles, DEFAULT_X, DEFAULT_Y, DEFAULT_SIZE);
         task.compute();
         long endTime = System.currentTimeMillis();
         System.out.println("Sequential computation took: " + (endTime - startTime) + " ms");
