@@ -13,7 +13,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Translate;
 import javafx.stage.Stage;
-
+import mpi.MPI;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -80,6 +80,10 @@ public class HelloApplication extends Application {
         box.setFill(Color.BLACK);
         drawingPane.getChildren().addAll(box); // add the black rectangle to the drawingPane, the background of the carpet
 
+
+
+
+
         // list to store rectangles
         List<Rectangle> rectangles = new ArrayList<>();  // holds all the white rectangles that will be added
 
@@ -96,6 +100,11 @@ public class HelloApplication extends Application {
 
 
         drawingPane.getChildren().addAll(rectangles); // add all the rectangles stored in the rectangles list to the drawingPane
+
+
+
+
+
 
         // create a StackPane to layer the BorderPane on top of the drawingPane
         StackPane stackPane = new StackPane();
@@ -195,8 +204,35 @@ public class HelloApplication extends Application {
         System.out.println("Sequential computation took: " + (endTime - startTime) + " ms");
     }
 
+    private void computeGasketDistributively(int level, List<Rectangle> rectangles) {
+        MPI.Init(null);
+        int rank = MPI.COMM_WORLD.Rank();
+        int size = MPI.COMM_WORLD.Size();
+
+        System.out.println("Process " + rank + " of " + size + " starting computation.");
+
+        DistributiveGasketTask task = new DistributiveGasketTask(level, rectangles, DEFAULT_X, DEFAULT_Y, DEFAULT_SIZE);
+        task.compute();
+
+        MPI.Finalize();
+    }
+
 
     public static void main(String[] args) {
-        launch(); // Launch the JavaFX application
+        Application.launch(HelloApplication.class, args);
+
+        // Initialize MPI
+        MPI.Init(args);
+
+        // Start MPI computation
+        int rank = MPI.COMM_WORLD.Rank();
+        int size = MPI.COMM_WORLD.Size();
+
+        if (rank == 0) {
+            System.out.println("Hello world from " + rank + " of " + size);
+        }
+
+        MPI.Finalize();
+
     }
 }
