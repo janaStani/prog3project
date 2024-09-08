@@ -4,6 +4,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import mpi.MPI;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class DistributiveGasketTask {
@@ -11,7 +12,7 @@ public class DistributiveGasketTask {
     private final int x;
     private final int y;
 
-    public DistributiveGasketTask(int level, List<Rectangle> rectangles, int x, int y, int size) {
+    public DistributiveGasketTask(List<Rectangle> rectangles, int x, int y) {
         this.rectangles = rectangles;
         this.x = x;
         this.y = y;
@@ -59,11 +60,25 @@ public class DistributiveGasketTask {
     }
 
     private void gatherResults() {
-        // Gather the rectangles from all processes
+        // MPI gather implementation
         int rank = MPI.COMM_WORLD.Rank();
         int size = MPI.COMM_WORLD.Size();
 
-        // Here, we could use MPI functions to gather results from all processes
-        // For example: MPI.Gather(rectangles, ...);
+        if (rank == 0) {
+            // Root process
+            List<Rectangle> globalRectangles = new ArrayList<>(rectangles);
+
+            // Receive rectangles from other processes
+            for (int i = 1; i < size; i++) {
+                List<Rectangle> receivedRectangles = new ArrayList<>();
+                MPI.COMM_WORLD.Recv(receivedRectangles, 0, 0, MPI.OBJECT, i, 0);
+                globalRectangles.addAll(receivedRectangles);
+            }
+
+            // Now globalRectangles contains the combined results
+        } else {
+            // Send local rectangles to the root process
+            MPI.COMM_WORLD.Send(rectangles, 0, rectangles.size(), MPI.OBJECT, 0, 0);
+        }
     }
 }

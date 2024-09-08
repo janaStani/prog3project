@@ -1,14 +1,21 @@
 package com.example.prog3proj1;
 
-/*
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
+
+import java.util.List;
+import java.util.concurrent.RecursiveTask;
+
 // subclass of RecursiveTask which is part of the Fork/Join framework
-class GasketTask extends RecursiveTask<Void> {
-    private final int level;
-    private final List<Rectangle> rectangles;
-    private final int x, y, size;
+class ParallelGasketTask extends RecursiveTask<Void> {
+
+    private final int level;  // recursion depth
+    private final List<Rectangle> rectangles; // list to store the white rectangles
+    private final int x, y, size;  // position and size of the current square
+
 
     // constructor to initialize the task
-    public GasketTask(int level, List<Rectangle> rectangles, int x, int y, int size) {
+    public ParallelGasketTask(int level, List<Rectangle> rectangles, int x, int y, int size) {
         this.level = level;
         this.rectangles = rectangles;
         this.x = x;
@@ -21,98 +28,42 @@ class GasketTask extends RecursiveTask<Void> {
     // it breaks down a larger square into smaller squares and adds a white rectangle in the middle of each division
     @Override
     protected Void compute() {
+        //System.out.println("Thread: " + Thread.currentThread().getName() + " Level: " + level); // Log current thread name and level
+
         // base case: if level is 0, stop the recursion
         if (level > 0) {
 
-            int sub = size / 3; // calculate the size of each smaller sub-square by dividing the current square size by 3
+            int sub = size / 3;  // calculate the size of each smaller sub-square by dividing the current square size by 3
 
             // create a white rectangle at the center of the current square
-            Rectangle box = new Rectangle(x + sub, y + sub, sub - 1, sub - 1); // position at one-third of the current square width and height, the size is smaller than the sub-square
+            Rectangle box = new Rectangle(x + sub, y + sub, sub - 1, sub - 1);
+            // position at one-third of the current square width and height, the size is smaller than the sub-square
             box.setFill(Color.WHITE);
             synchronized (rectangles) {
-                rectangles.add(box); // add the white rectangle to the list
+                rectangles.add(box);  // add the white rectangle to the list
             }
 
             int newLevel = level - 1; // decrement the level of recursion
 
-            // recursively compute the white rectangles for the 8 sub-squares
-            GasketTask topLeft = new GasketTask(newLevel, rectangles, x, y, sub); // top-left square
-            GasketTask topCenter = new GasketTask(newLevel, rectangles, x + sub, y, sub); // top-center square
-            GasketTask topRight = new GasketTask(newLevel, rectangles, x + 2 * sub, y, sub); // top-right square
-            GasketTask middleLeft = new GasketTask(newLevel, rectangles, x, y + sub, sub); // middle-left square
 
-            // skip the middle-middle sub-square (since it is already filled with a white rectangle).
+            // recursively compute the white rectangles for the 8 sub-squares, invoking each task in parallel
+            invokeAll(
+                    new ParallelGasketTask(newLevel, rectangles, x, y, sub), // top-left square
+                    new ParallelGasketTask(newLevel, rectangles, x + sub, y, sub), // top-center square
+                    new ParallelGasketTask(newLevel, rectangles, x + 2 * sub, y, sub), // top-right square
+                    new ParallelGasketTask(newLevel, rectangles, x, y + sub, sub), // middle-left square
 
-            GasketTask middleRight = new GasketTask(newLevel, rectangles, x + 2 * sub, y + sub, sub); // middle-right square
-            GasketTask bottomLeft = new GasketTask(newLevel, rectangles, x, y + 2 * sub, sub); // bottom-left square
-            GasketTask bottomCenter = new GasketTask(newLevel, rectangles, x + sub, y + 2 * sub, sub); // bottom-center square
-            GasketTask bottomRight = new GasketTask(newLevel, rectangles, x + 2 * sub, y + 2 * sub, sub); // bottom-right square
+                    // skip the middle-middle sub-square (since it is already filled with a white rectangle).
 
-            // invoke all tasks in parallel
-            invokeAll(topLeft, topCenter, topRight, middleLeft, middleRight, bottomLeft, bottomCenter, bottomRight);
+                    new ParallelGasketTask(newLevel, rectangles, x + 2 * sub, y + sub, sub), // middle-right square
+                    new ParallelGasketTask(newLevel, rectangles, x, y + 2 * sub, sub), // bottom-left square
+                    new ParallelGasketTask(newLevel, rectangles, x + sub, y + 2 * sub, sub), // bottom-center square
+                    new ParallelGasketTask(newLevel, rectangles, x + 2 * sub, y + 2 * sub, sub) // bottom-right square
+            );
         }
         return null;
         // RecursiveTask is of type void doesn't return any value
         // the task's purpose is to modify the rectangles list
-    }
-}*/
-
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
-
-import java.util.List;
-import java.util.concurrent.RecursiveTask;
-
-class ParallelGasketTask extends RecursiveTask<Void> {
-
-    private final int level;
-    private final List<Rectangle> rectangles;
-    private final int x, y, size;
-
-
-
-
-
-
-    public ParallelGasketTask(int level, List<Rectangle> rectangles, int x, int y, int size) {
-        this.level = level;
-        this.rectangles = rectangles;
-        this.x = x;
-        this.y = y;
-        this.size = size;
-
-
-    }
-
-    @Override
-    protected Void compute() {
-        System.out.println("Thread: " + Thread.currentThread().getName() + " Level: " + level); // Log current thread name and level
-
-        if (level > 0) {
-
-            int sub = size / 3;
-            Rectangle box = new Rectangle(x + sub, y + sub, sub - 1, sub - 1);
-            box.setFill(Color.WHITE);
-            synchronized (rectangles) {
-                rectangles.add(box);
-            }
-
-            int newLevel = level - 1;
-
-            System.out.println("Splitting tasks at level: " + newLevel);
-
-            invokeAll(
-                    new ParallelGasketTask(newLevel, rectangles, x, y, sub),
-                    new ParallelGasketTask(newLevel, rectangles, x + sub, y, sub),
-                    new ParallelGasketTask(newLevel, rectangles, x + 2 * sub, y, sub),
-                    new ParallelGasketTask(newLevel, rectangles, x, y + sub, sub),
-                    new ParallelGasketTask(newLevel, rectangles, x + 2 * sub, y + sub, sub),
-                    new ParallelGasketTask(newLevel, rectangles, x, y + 2 * sub, sub),
-                    new ParallelGasketTask(newLevel, rectangles, x + sub, y + 2 * sub, sub),
-                    new ParallelGasketTask(newLevel, rectangles, x + 2 * sub, y + 2 * sub, sub)
-            );
-        }
-        return null;
     }
 
 }

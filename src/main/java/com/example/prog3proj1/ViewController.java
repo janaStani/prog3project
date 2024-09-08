@@ -44,16 +44,6 @@ public class ViewController {
         translateTransform.setY((sceneHeight - HelloApplication.DEFAULT_SIZE) / 2 - HelloApplication.DEFAULT_Y);
     }
 
-    public void updateDrawingPane(double sceneWidth, double sceneHeight) {
-        // Center the drawing pane in the scene
-        double centerX = (sceneWidth - HelloApplication.DEFAULT_SIZE) / 2 - HelloApplication.DEFAULT_X;
-        double centerY = (sceneHeight - HelloApplication.DEFAULT_SIZE) / 2 - HelloApplication.DEFAULT_Y;
-
-        // Reset transformations to fit the new scene dimensions
-        translateTransform.setX(centerX);
-        translateTransform.setY(centerY);
-    }
-
 
 
     // method initializes the drag operation
@@ -80,4 +70,7 @@ public class ViewController {
         translateTransform.setX(startX + offsetX);
         translateTransform.setY(startY + offsetY);
     }
+
+
 }
+

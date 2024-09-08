@@ -13,7 +13,6 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Translate;
 import javafx.stage.Stage;
-import mpi.MPI;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +38,7 @@ public class HelloApplication extends Application {
     private double sceneHeight;
 
 
+
     // initialize the JavaFX application
     @Override
     public void start(Stage primaryStage) {
@@ -62,6 +62,7 @@ public class HelloApplication extends Application {
         Button zoomOutButton = new Button("Zoom Out");
         Button resetButton = new Button("Reset View");
 
+
         // initialize the ViewController with the scale and translate transformations
         viewController = new ViewController(scaleTransform, translateTransform);
 
@@ -81,30 +82,18 @@ public class HelloApplication extends Application {
         drawingPane.getChildren().addAll(box); // add the black rectangle to the drawingPane, the background of the carpet
 
 
-
-
-
         // list to store rectangles
         List<Rectangle> rectangles = new ArrayList<>();  // holds all the white rectangles that will be added
 
-        // takes the level of recursion, the list of rectangles to store the results and the initial position and size of the largest rectangle the base
-        //GasketTask task = new GasketTask(level, rectangles, DEFAULT_X, DEFAULT_Y, DEFAULT_SIZE);
 
-
+        // what mode to run the application in
         if (shouldUseParallel()) {
             computeGasketParallel(level, rectangles);
         } else {
             computeGasketSequentially(level, rectangles);
         }
 
-
-
         drawingPane.getChildren().addAll(rectangles); // add all the rectangles stored in the rectangles list to the drawingPane
-
-
-
-
-
 
         // create a StackPane to layer the BorderPane on top of the drawingPane
         StackPane stackPane = new StackPane();
@@ -114,23 +103,9 @@ public class HelloApplication extends Application {
         Scene scene = new Scene(stackPane, 800, 600); // create a scene with the stackPane as the root node
 
 
-
-        // keep track of the current width and height of the scene, which can change if the user resizes the window
-        scene.widthProperty().addListener((obs, oldVal, newVal) -> {
-            sceneWidth = newVal.doubleValue();
-            viewController.updateDrawingPane(sceneWidth, sceneHeight); // Update drawing pane on width change
-        });
-
-        scene.heightProperty().addListener((obs, oldVal, newVal) -> {
-            sceneHeight = newVal.doubleValue();
-            viewController.updateDrawingPane(sceneWidth, sceneHeight); // Update drawing pane on height change
-        });
-
-
         // Initialize scene dimensions to current width and height
         sceneWidth = scene.getWidth();
         sceneHeight = scene.getHeight();
-
 
 
         // Enable mouse dragging for panning
@@ -153,6 +128,7 @@ public class HelloApplication extends Application {
 
 
     }
+
 
     // determine whether to use parallel computation
     private boolean shouldUseParallel() {
@@ -186,53 +162,31 @@ public class HelloApplication extends Application {
 
 
     private void computeGasketParallel(int level, List<Rectangle> rectangles) {
-        int parallelism = Runtime.getRuntime().availableProcessors();
-        long startTime = System.currentTimeMillis();
+
+        int parallelism = Runtime.getRuntime().availableProcessors();  // get the number of available processors
+
+        long startTime = System.currentTimeMillis();                   // track the time for computation
+
         try (ForkJoinPool pool = new ForkJoinPool(parallelism)) {
             ParallelGasketTask task = new ParallelGasketTask(level, rectangles, DEFAULT_X, DEFAULT_Y, DEFAULT_SIZE);
             pool.invoke(task);
         }
+
         long endTime = System.currentTimeMillis();
         System.out.println("Parallel computation took: " + (endTime - startTime) + " ms");
     }
 
     private void computeGasketSequentially(int level, List<Rectangle> rectangles) {
-        long startTime = System.currentTimeMillis();
+        long startTime = System.currentTimeMillis();             // track the time for computation
+
         SequentialGasketTask task = new SequentialGasketTask(level, rectangles, DEFAULT_X, DEFAULT_Y, DEFAULT_SIZE);
         task.compute();
+
         long endTime = System.currentTimeMillis();
         System.out.println("Sequential computation took: " + (endTime - startTime) + " ms");
     }
 
-    private void computeGasketDistributively(int level, List<Rectangle> rectangles) {
-        MPI.Init(null);
-        int rank = MPI.COMM_WORLD.Rank();
-        int size = MPI.COMM_WORLD.Size();
-
-        System.out.println("Process " + rank + " of " + size + " starting computation.");
-
-        DistributiveGasketTask task = new DistributiveGasketTask(level, rectangles, DEFAULT_X, DEFAULT_Y, DEFAULT_SIZE);
-        task.compute();
-
-        MPI.Finalize();
-    }
-
-
     public static void main(String[] args) {
-        Application.launch(HelloApplication.class, args);
-
-        // Initialize MPI
-        MPI.Init(args);
-
-        // Start MPI computation
-        int rank = MPI.COMM_WORLD.Rank();
-        int size = MPI.COMM_WORLD.Size();
-
-        if (rank == 0) {
-            System.out.println("Hello world from " + rank + " of " + size);
-        }
-
-        MPI.Finalize();
-
+        launch(args);
     }
 }
